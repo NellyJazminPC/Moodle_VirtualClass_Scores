@@ -6,9 +6,9 @@ Este repositorio contiene scripts relacionados con la organización de las calif
 
 - `data/` → Carpeta con archivos de datos obtenidos de Moodle.
 
-- `scripts/` → Scripts en R y/o Python para procesamiento de datos.
+- `scripts/` → Scripts en R para procesamiento de datos.
 
-- `results/` → Resultados del análisis de calificaciones.
+- `results/` → Resultados del análisis.
 
 - `README.md` → Este archivo con la descripción del repositorio.
 
