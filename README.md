@@ -1,0 +1,17 @@
+## Moodle VirtualClass Scores
+
+Este repositorio contiene scripts relacionados con la organización de las calificaciones registradas en Moodle VirtualClass en un solo archivo excel. Su propósito es facilitar el análisis y procesamiento de calificaciones obtenidas a través de la plataforma Moodle usando R.
+
+### 📂 Contenido del repositorio
+
+- `data/` → Carpeta con archivos de datos obtenidos de Moodle.
+
+- `scripts/` → Scripts en R y/o Python para procesamiento de datos.
+
+- `results/` → Resultados del análisis de calificaciones.
+
+- `README.md` → Este archivo con la descripción del repositorio.
+
+### ✨ Contribuciones
+
+Si deseas contribuir, siéntete libre de hacer un fork del repositorio y enviar un pull request con tus mejoras.
