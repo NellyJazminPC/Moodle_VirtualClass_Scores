@@ -189,93 +189,103 @@ cat("Muestra de IDs en datos_final:", head(datos_final$id), "\n")
 library(openxlsx)
 library(dplyr)
 
-library(openxlsx)
-library(dplyr)
-
 ## 1. Función para preparar datos (NA -> 0) ----
 preparar_para_formatos <- function(df) {
-  # Identificar columnas numéricas (excluyendo id/ID)
   numeric_cols <- names(df)[sapply(df, is.numeric) & !names(df) %in% c("id", "ID")]
-  
   df %>%
     mutate(across(all_of(numeric_cols), ~ if_else(is.na(.), 0, .))) %>%
     mutate(Promedio = rowMeans(select(., all_of(numeric_cols)), na.rm = TRUE)) %>%
     mutate(Promedio = round(Promedio, 2))
 }
 
-## 2. Función CORREGIDA para exportar con formatos ----
-exportar_con_formatos <- function(df, nombre_archivo) {
-  wb <- createWorkbook()
-  addWorksheet(wb, "Datos")
-  
-  # Preparar datos
-  df_formateado <- preparar_para_formatos(df)
-  writeData(wb, "Datos", df_formateado)
-  
+## 2. Función para aplicar formatos ----
+aplicar_formatos <- function(wb, sheet_name, df) {
   # Estilos
   style_zero <- createStyle(fontColour = "#FFFFFF", bgFill = "#FFA500") # 0 naranja
   style_lt6 <- createStyle(fontColour = "#000000", bgFill = "#FFFF00")  # <6 amarillo
   
-  # Aplicar formatos usando EXPRESIONES
-  numeric_cols <- names(df_formateado)[sapply(df_formateado, is.numeric) & 
-                                         !names(df_formateado) %in% c("id", "ID", "Promedio")]
+  # Aplicar formatos usando expresiones
+  numeric_cols <- names(df)[sapply(df, is.numeric) & !names(df) %in% c("id", "ID", "Promedio")]
   
   for(col_name in numeric_cols) {
-    col_letter <- int2col(which(names(df_formateado) == col_name))
+    col_num <- which(names(df) == col_name)
+    col_letter <- int2col(col_num)
     
-    # Para 0 (usando expresión)
+    # Para 0
     conditionalFormatting(
-      wb, "Datos",
-      cols = which(names(df_formateado) == col_name),
-      rows = 2:(nrow(df_formateado)+1),
+      wb, sheet_name,
+      cols = col_num,
+      rows = 2:(nrow(df)+1),
       style = style_zero,
       type = "expression",
       rule = paste0(col_letter, "2=0")
     )
     
-    # Para <6 (usando expresión)
+    # Para <6
     conditionalFormatting(
-      wb, "Datos",
-      cols = which(names(df_formateado) == col_name),
-      rows = 2:(nrow(df_formateado)+1),
+      wb, sheet_name,
+      cols = col_num,
+      rows = 2:(nrow(df)+1),
       style = style_lt6,
       type = "expression",
       rule = paste0(col_letter, "2<6")
     )
   }
-  
-  setColWidths(wb, "Datos", cols = 1:ncol(df_formateado), widths = "auto")
-  
-  if(!dir.exists("output")) dir.create("output")
-  saveWorkbook(wb, file.path("output", nombre_archivo), overwrite = TRUE)
-  message("Archivo exportado: ", file.path("output", nombre_archivo))
 }
 
-## Función auxiliar para convertir índice a letra de columna ----
+## Función auxiliar para letras de columna ----
 int2col <- function(n) {
-  if (n <= 26) {
-    return(LETTERS[n])
-  } else {
-    return(paste0(LETTERS[floor((n-1)/26)], LETTERS[((n-1) %% 26) + 1]))
-  }
+  if (n <= 26) return(LETTERS[n])
+  paste0(LETTERS[floor((n-1)/26)], LETTERS[((n-1) %% 26) + 1])
 }
 
-## 3. Ejecución para Grupo 2 ----
-# Verificar columnas numéricas
-cat("Columnas numéricas en Grupo 2:\n")
-print(names(datos_grupo2)[sapply(datos_grupo2, is.numeric)])
-
-# Procesar y exportar
-datos_grupo2_formateo <- preparar_para_formatos(datos_grupo2)
-exportar_con_formatos(datos_grupo2, "grupo2_final.xlsx")
-
-## 4. Ejecución para Grupo 3 ----
-if(exists("datos_grupo3") && nrow(datos_grupo3) > 0) {
-  cat("\nColumnas numéricas en Grupo 3:\n")
-  print(names(datos_grupo3)[sapply(datos_grupo3, is.numeric)])
+## 3. Exportar TODO en un solo archivo ----
+exportar_todo_en_un_archivo <- function() {
+  wb <- createWorkbook()
   
-  datos_grupo3_formateo <- preparar_para_formatos(datos_grupo3)
-  exportar_con_formatos(datos_grupo3, "grupo3_final.xlsx")
-} else {
-  message("\nNo se encontró datos_grupo3")
+  # Hoja con datos originales del Grupo 2
+  if(exists("datos_grupo2") && nrow(datos_grupo2) > 0) {
+    addWorksheet(wb, "Grupo2_SinFormato")
+    writeData(wb, "Grupo2_SinFormato", datos_grupo2)
+    setColWidths(wb, "Grupo2_SinFormato", cols = 1:ncol(datos_grupo2), widths = "auto")
+  }
+  
+  # Hoja con datos originales del Grupo 3
+  if(exists("datos_grupo3") && nrow(datos_grupo3) > 0) {
+    addWorksheet(wb, "Grupo3_SinFormato")
+    writeData(wb, "Grupo3_SinFormato", datos_grupo3)
+    setColWidths(wb, "Grupo3_SinFormato", cols = 1:ncol(datos_grupo3), widths = "auto")
+  }
+  
+  # Hoja con datos formateados del Grupo 2
+  if(exists("datos_grupo2") && nrow(datos_grupo2) > 0) {
+    datos_g2_format <- preparar_para_formatos(datos_grupo2)
+    addWorksheet(wb, "Grupo2_ConFormato")
+    writeData(wb, "Grupo2_ConFormato", datos_g2_format)
+    aplicar_formatos(wb, "Grupo2_ConFormato", datos_g2_format)
+    setColWidths(wb, "Grupo2_ConFormato", cols = 1:ncol(datos_g2_format), widths = "auto")
+  }
+  
+  # Hoja con datos formateados del Grupo 3
+  if(exists("datos_grupo3") && nrow(datos_grupo3) > 0) {
+    datos_g3_format <- preparar_para_formatos(datos_grupo3)
+    addWorksheet(wb, "Grupo3_ConFormato")
+    writeData(wb, "Grupo3_ConFormato", datos_g3_format)
+    aplicar_formatos(wb, "Grupo3_ConFormato", datos_g3_format)
+    setColWidths(wb, "Grupo3_ConFormato", cols = 1:ncol(datos_g3_format), widths = "auto")
+  }
+  
+  # Guardar archivo
+  if(!dir.exists("output")) dir.create("output")
+  output_file <- "output/calificaciones_consolidado.xlsx"
+  saveWorkbook(wb, output_file, overwrite = TRUE)
+  message("Archivo exportado con éxito: ", normalizePath(output_file))
+  
+  # Mostrar resumen
+  cat("\nHojas creadas:\n")
+  if(exists("datos_grupo2")) cat("- Grupo2_SinFormato\n- Grupo2_ConFormato\n")
+  if(exists("datos_grupo3")) cat("- Grupo3_SinFormato\n- Grupo3_ConFormato\n")
 }
+
+## 4. Ejecutar la exportación ----
+exportar_todo_en_un_archivo()
