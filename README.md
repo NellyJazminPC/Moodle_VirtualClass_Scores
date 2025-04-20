@@ -8,7 +8,7 @@ Este repositorio contiene scripts relacionados con la organización de las calif
 
 - `scripts/` → Scripts en R para procesamiento de datos.
 
-- `results/` → Resultados del análisis.
+- `output/` → Resultados del análisis.
 
 - `README.md` → Este archivo con la descripción del repositorio.
 

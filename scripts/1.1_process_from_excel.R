@@ -1,0 +1,281 @@
+# Cargar paquetes necesarios
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(stringr)
+library(openxlsx)
+# Cargar el archivo Excel
+datos <- read_excel("data/Historial de notas.xlsx")
+
+# Seleccionar y renombrar columnas (manteniendo ID como texto)
+datos_procesados <- datos %>%
+  select(
+    nombre = "Nombre",
+    id = "Número de ID",        # Se mantendrá como character
+    email = "Dirección de correo",
+    item = "Ítem de calificación",
+    calificacion = "Calificación revisada"
+  ) %>%
+  mutate(
+    nombre = as.character(nombre),  # Asegurar que nombre es texto
+    id = as.character(id)           # Asegurar que id es texto
+  )
+
+# Verificación de tipos
+cat("\nTipos de datos finales:\n")
+glimpse(datos_procesados)
+
+# Mostrar muestra de datos
+cat("\nMuestra de datos:\n")
+head(datos_procesados)
+
+
+
+
+
+# 1. Filtrar y limpiar los datos
+datos_filtrados <- datos_procesados %>%
+  # Eliminar registros no deseados (case insensitive)
+  filter(!str_detect(tolower(item), "asistencia|cuestionario inicial")) %>%
+  # Eliminar filas con calificación vacía o NA
+  filter(!is.na(calificacion) & calificacion != "") %>%
+  # Convertir calificaciones a numérico (si están como texto "8,00")
+  mutate(calificacion = as.numeric(str_replace(calificacion, ",", ".")))
+
+# 2. Consolidar múltiples calificaciones (quedarse con la máxima)
+datos_consolidados <- datos_filtrados %>%
+  group_by(nombre, id, item) %>%
+  summarise(
+    calificacion = max(calificacion, na.rm = TRUE),  # Conservar la máxima calificación
+    .groups = "drop"
+  ) %>%
+  # Reemplazar Inf (cuando todos son NA) por NA
+  mutate(calificacion = ifelse(is.infinite(calificacion), NA, calificacion))
+
+# 3. Transformar a formato ancho
+datos_ancho <- datos_consolidados %>%
+  pivot_wider(
+    names_from = item,
+    values_from = calificacion,
+    id_cols = c(nombre, id),
+    names_sort = TRUE
+  )
+
+colnames(datos_ancho)
+# 
+
+
+
+# 1. Primero identificamos y renombramos las columnas según su unidad
+datos_renombrados <- datos_ancho %>%
+  rename_with(~ {
+    case_when(
+      str_detect(.x, "Recapitulación.*Sesión 1") ~ "U1_Cuestionario de Recapitulación: Sesión 1",
+      str_detect(.x, "Ejercicio.*Archivos fasta") ~ "U1_Ejercicio - Archivos fasta",
+      str_detect(.x, "Actividad 1.1") ~ "U1_Actividad 1.1 Bases de datos",
+      str_detect(.x, "Actividad 1.2") ~ "U1_Actividad 1.2 Formato fasta",
+      str_detect(.x, "TAREA.*18 de FEBRERO.*Fasta-NCBI") ~ "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI",
+      str_detect(.x, "Recapitulación.*Sesión 2") ~ "U1_Cuestionario de Recapitulación: Sesión 2",
+      str_detect(.x, "TAREA.*25 DE FEBRERO.*Actividad 2.1") ~ "U2_TAREA PARA MARTES 25 DE FEBRERO. Actividad 2.1",
+      str_detect(.x, "Actividad de sistemática molecular") ~ "U2_Actividad de sistemática molecular",
+      str_detect(.x, "Evaluación de sistemática molecular") ~ "U2_Evaluación de sistemática molecular",
+      str_detect(.x, "Cuestionario final U2") ~ "U2_Cuestionario final U2 - NGS y formatos",
+      str_detect(.x, "actividades del 11 de marzo") ~ "U3_Cuestionario de actividades del 11 de marzo. PRESENTACIÓN + VIDEO",
+      str_detect(.x, "Actividad 3.1.*PDB") ~ "U3_Actividad 3.1 (PDB 2025)",
+      str_detect(.x, "Cuestionario de la actividad 3.1") ~ "U3_Cuestionario de la actividad 3.1",
+      str_detect(.x, "Actividad 3.2.*GFP") ~ "U3_Actividad 3.2 (GFP 2025)",
+      str_detect(.x, "Cuestionario de la actividad 3.2") ~ "U3_Cuestionario de la actividad 3.2",
+      str_detect(.x, "Actividad 3.3.*Alineamiento") ~ "U3_Actividad 3.3 (Alineamiento estructural 2025)",
+      str_detect(.x, "Cuestionario de la actividad 3.3") ~ "U3_Cuestionario de la actividad 3.3",
+      str_detect(.x, "Cuestionario final proteínas") ~ "U3_Cuestionario final proteínas 2025",
+      str_detect(.x, "ACTIVIDAD 4.1") ~ "U4_ACTIVIDAD 4.1 2025",
+      str_detect(.x, "Evaluación Heatmap") ~ "U4_Evaluación Heatmap",
+      .x %in% c("nombre", "id") ~ .x,  # Mantener nombre e id igual
+      TRUE ~ .x  # Mantener otros nombres sin cambios
+    )
+  })
+
+# 2. Eliminar columna no deseada
+datos_renombrados <- datos_renombrados %>%
+  select(-matches("Prueba de Diagnóstico Inicial"))
+
+# 3. Definir el orden exacto deseado
+orden_columnas <- c(
+  "nombre", "id",
+  "U1_Cuestionario de Recapitulación: Sesión 1",
+  "U1_Ejercicio - Archivos fasta",
+  "U1_Actividad 1.1 Bases de datos",
+  "U1_Actividad 1.2 Formato fasta",
+  "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI",
+  "U1_Cuestionario de Recapitulación: Sesión 2",
+  "U2_TAREA PARA MARTES 25 DE FEBRERO. Actividad 2.1",
+  "U2_Actividad de sistemática molecular",
+  "U2_Evaluación de sistemática molecular",
+  "U2_Cuestionario final U2 - NGS y formatos",
+  "U3_Cuestionario de actividades del 11 de marzo. PRESENTACIÓN + VIDEO",
+  "U3_Actividad 3.1 (PDB 2025)",
+  "U3_Cuestionario de la actividad 3.1",
+  "U3_Actividad 3.2 (GFP 2025)",
+  "U3_Cuestionario de la actividad 3.2",
+  "U3_Actividad 3.3 (Alineamiento estructural 2025)",
+  "U3_Cuestionario de la actividad 3.3",
+  "U3_Cuestionario final proteínas 2025",
+  "U4_ACTIVIDAD 4.1 2025",
+  "U4_Evaluación Heatmap"
+)
+
+# 4. Ordenar las columnas según el orden definido
+datos_final <- datos_renombrados %>%
+  select(any_of(orden_columnas))  # any_of() ignora columnas que no existan
+
+# Columnas a convertir (ajusta según tus necesidades)
+columnas_convertir <- c(
+  "U1_Ejercicio - Archivos fasta",
+  "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI"
+)
+
+# Conversión automática
+datos_final <- datos_final %>%
+  mutate(across(
+    all_of(columnas_convertir),
+    ~ ./10 %>% round(1)  # Divide entre 10 y redondea a 1 decimal
+  ))
+
+# 5. Verificar resultados
+cat("Columnas finales:\n")
+print(colnames(datos_final))
+
+
+
+
+# 1. Convertir IDs a character y obtener listas únicas
+ids_grupo2 <- grupo2 %>% 
+  mutate(id_estudiante = as.character(`Número de ID`)) %>%
+  pull(id_estudiante) %>% 
+  unique()
+
+ids_grupo3 <- grupo3 %>% 
+  mutate(id_estudiante = as.character(`Número de ID`)) %>%
+  pull(id_estudiante) %>% 
+  unique()
+
+# Asegurar que datos_final$id sea character (por si acaso)
+datos_final <- datos_final %>% 
+  mutate(id = as.character(id))
+
+# 2. Separar los dataframes
+datos_grupo2 <- datos_final %>% 
+  filter(id %in% ids_grupo2) %>%
+  mutate(grupo = "GRUPO 2")
+
+datos_grupo3 <- datos_final %>% 
+  filter(id %in% ids_grupo3) %>%
+  mutate(grupo = "GRUPO 3")
+
+# 3. Verificación adicional (detallada)
+cat("\nVerificación detallada:\n")
+cat("Total IDs únicos en Grupo 2:", length(ids_grupo2), "\n")
+cat("Total IDs únicos en Grupo 3:", length(ids_grupo3), "\n")
+cat("IDs en común entre grupos:", sum(ids_grupo2 %in% ids_grupo3), "\n\n")
+
+cat("Muestra de IDs Grupo 2:", head(ids_grupo2), "\n")
+cat("Muestra de IDs en datos_final:", head(datos_final$id), "\n")
+
+
+
+
+##### Formarto para exportar en excel
+
+library(openxlsx)
+library(dplyr)
+
+library(openxlsx)
+library(dplyr)
+
+## 1. Función para preparar datos (NA -> 0) ----
+preparar_para_formatos <- function(df) {
+  # Identificar columnas numéricas (excluyendo id/ID)
+  numeric_cols <- names(df)[sapply(df, is.numeric) & !names(df) %in% c("id", "ID")]
+  
+  df %>%
+    mutate(across(all_of(numeric_cols), ~ if_else(is.na(.), 0, .))) %>%
+    mutate(Promedio = rowMeans(select(., all_of(numeric_cols)), na.rm = TRUE)) %>%
+    mutate(Promedio = round(Promedio, 2))
+}
+
+## 2. Función CORREGIDA para exportar con formatos ----
+exportar_con_formatos <- function(df, nombre_archivo) {
+  wb <- createWorkbook()
+  addWorksheet(wb, "Datos")
+  
+  # Preparar datos
+  df_formateado <- preparar_para_formatos(df)
+  writeData(wb, "Datos", df_formateado)
+  
+  # Estilos
+  style_zero <- createStyle(fontColour = "#FFFFFF", bgFill = "#FFA500") # 0 naranja
+  style_lt6 <- createStyle(fontColour = "#000000", bgFill = "#FFFF00")  # <6 amarillo
+  
+  # Aplicar formatos usando EXPRESIONES
+  numeric_cols <- names(df_formateado)[sapply(df_formateado, is.numeric) & 
+                                         !names(df_formateado) %in% c("id", "ID", "Promedio")]
+  
+  for(col_name in numeric_cols) {
+    col_letter <- int2col(which(names(df_formateado) == col_name))
+    
+    # Para 0 (usando expresión)
+    conditionalFormatting(
+      wb, "Datos",
+      cols = which(names(df_formateado) == col_name),
+      rows = 2:(nrow(df_formateado)+1),
+      style = style_zero,
+      type = "expression",
+      rule = paste0(col_letter, "2=0")
+    )
+    
+    # Para <6 (usando expresión)
+    conditionalFormatting(
+      wb, "Datos",
+      cols = which(names(df_formateado) == col_name),
+      rows = 2:(nrow(df_formateado)+1),
+      style = style_lt6,
+      type = "expression",
+      rule = paste0(col_letter, "2<6")
+    )
+  }
+  
+  setColWidths(wb, "Datos", cols = 1:ncol(df_formateado), widths = "auto")
+  
+  if(!dir.exists("output")) dir.create("output")
+  saveWorkbook(wb, file.path("output", nombre_archivo), overwrite = TRUE)
+  message("Archivo exportado: ", file.path("output", nombre_archivo))
+}
+
+## Función auxiliar para convertir índice a letra de columna ----
+int2col <- function(n) {
+  if (n <= 26) {
+    return(LETTERS[n])
+  } else {
+    return(paste0(LETTERS[floor((n-1)/26)], LETTERS[((n-1) %% 26) + 1]))
+  }
+}
+
+## 3. Ejecución para Grupo 2 ----
+# Verificar columnas numéricas
+cat("Columnas numéricas en Grupo 2:\n")
+print(names(datos_grupo2)[sapply(datos_grupo2, is.numeric)])
+
+# Procesar y exportar
+datos_grupo2_formateo <- preparar_para_formatos(datos_grupo2)
+exportar_con_formatos(datos_grupo2, "grupo2_final.xlsx")
+
+## 4. Ejecución para Grupo 3 ----
+if(exists("datos_grupo3") && nrow(datos_grupo3) > 0) {
+  cat("\nColumnas numéricas en Grupo 3:\n")
+  print(names(datos_grupo3)[sapply(datos_grupo3, is.numeric)])
+  
+  datos_grupo3_formateo <- preparar_para_formatos(datos_grupo3)
+  exportar_con_formatos(datos_grupo3, "grupo3_final.xlsx")
+} else {
+  message("\nNo se encontró datos_grupo3")
+}
