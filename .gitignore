@@ -2,3 +2,6 @@ data/bioinformatica_semestral.xlsx
 .Rproj.user
 *.Rproj
 .DS_Store
+.Rhistory
+data/
+output/
