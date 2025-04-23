@@ -4,13 +4,13 @@ Este repositorio contiene scripts relacionados con la organización de las calif
 
 ### 📂 Contenido del repositorio
 
-- `data/` → Carpeta con archivos de datos obtenidos de Moodle.
+- `data/` → Carpeta con archivos de datos obtenidos del Aula Virtual en formato `.xlsx` (**Excel**).
 
-- `scripts/` → Scripts en R para procesamiento de datos.
+- [scripts/](/scripts/README.md) → Scripts en R para procesamiento de datos.
 
 - `output/` → Resultados del análisis.
 
-- `README.md` → Este archivo con la descripción del repositorio.
+- `README.md` → Este archivo muestra la descripción del repositorio.
 
 ### ✨ Contribuciones
 

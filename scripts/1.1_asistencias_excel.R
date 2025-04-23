@@ -10,7 +10,7 @@ library(stringr)
 library(openxlsx)
 library(ggplot2)
 # Cargar el archivo Excel saltando las primeras 2 filas
-datos <- read_excel("data/2264_BIOINFV2B_Asistencias_20250419-2054.xlsx", 
+datos <- read_excel("data/2264_BIOINFV2B_Asistencias_20250422-2029.xlsx", 
                     skip = 2)  # <- Esta opción omite las primeras 2 filas
 
 # Eliminar las últimas 7 columnas
@@ -85,6 +85,20 @@ grupo2 <- grupo2 %>%
 grupo3 <- grupo3 %>%
   mutate(across(everything(), ~ifelse(. == "?", "FI", .)))
          
+         
+# Agregar columna de porcentaje de asistencia
+calcular_porcentaje_asistencia <- function(df) {
+  df %>%
+    rowwise() %>%
+    mutate(
+      Porcentaje_Asistencia = sum(c_across(8:ncol(.)) %in% c("P", "R", "FJ")) / (ncol(.) - 7) * 100
+    ) %>%
+    ungroup()
+}
+
+grupo2 <- calcular_porcentaje_asistencia(grupo2)
+grupo3 <- calcular_porcentaje_asistencia(grupo3)
+        
 ## Agregar formato condicional con colores ----
          
 # Función para crear estilos
@@ -99,7 +113,13 @@ estilo_FI <- createStyle(
 estilo_R <- createStyle(
            bgFill = "#4ECDC4",  # Verde azulado pastel
            fontColour = "white")
-         
+# Crear estilo para resaltar porcentaje menor al 80%
+estilo_bajo_80 <- createStyle(
+  bgFill = "#FF6B6B",  # Rojo pastel
+  fontColour = "white"
+)
+
+
 ## Preparar el archivo Excel ----
 wb <- createWorkbook()
          
@@ -124,6 +144,30 @@ agregar_hoja_con_formato <- function(wb, df, nombre_hoja) {
                                    style = estilo_R,
                                    rule = '=="R"')
            }
+             # Aplicar formato condicional
+  for (col in 1:ncol(df)) {
+    # Para valores FI
+    conditionalFormatting(wb, nombre_hoja,
+                          cols = col,
+                          rows = 2:(nrow(df) + 1),
+                          style = estilo_FI,
+                          rule = '=="FI"')
+    
+    # Para valores R
+    conditionalFormatting(wb, nombre_hoja,
+                          cols = col,
+                          rows = 2:(nrow(df) + 1),
+                          style = estilo_R,
+                          rule = '=="R"')
+  }
+  
+  # Resaltar porcentaje menor al 80%
+  conditionalFormatting(wb, nombre_hoja,
+                        cols = ncol(df),  # Última columna (Porcentaje_Asistencia)
+                        rows = 2:(nrow(df) + 1),
+                        style = estilo_bajo_80,
+                        rule = "<80")
+  
            
 # Autoajustar columnas
            setColWidths(wb, nombre_hoja, cols = 1:ncol(df), widths = "auto")
