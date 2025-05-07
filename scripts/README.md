@@ -32,7 +32,7 @@ Este script es útil para analizar y visualizar la asistencia de estudiantes de 
 
 ![alt text](<Captura de pantalla 2025-05-06 a la(s) 8.57.28 p.m..png>)
 
-Después de escoger la opción .xlsx para descargar los datos, obtendrás un archivo llamado **Historial de notas.xlsx**. Este archivo va en la carpeta **data** y es que el input para el script 1.1_process_from_excel.R
+Después de escoger la opción **.xlsx** para descargar los datos, obtendrás un archivo llamado **Historial de notas.xlsx**. Este archivo va en la carpeta **data** y es el input para el script **1.1_process_from_excel.R**
 
 - [1.1_process_from_excel.R](/scripts/1.1_process_from_excel.R)
 
