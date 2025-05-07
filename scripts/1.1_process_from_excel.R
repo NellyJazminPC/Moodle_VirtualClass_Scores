@@ -36,7 +36,7 @@ head(datos_procesados)
 # 1. Filtrar y limpiar los datos
 datos_filtrados <- datos_procesados %>%
   # Eliminar registros no deseados (case insensitive)
-  filter(!str_detect(tolower(item), "asistencia|cuestionario inicial")) %>%
+  filter(!str_detect(tolower(item), "asistencia|cuestionario inicial|pre-test")) %>%
   # Eliminar filas con calificación vacía o NA
   filter(!is.na(calificacion) & calificacion != "") %>%
   # Convertir calificaciones a numérico (si están como texto "8,00")
@@ -61,8 +61,13 @@ datos_ancho <- datos_consolidados %>%
     names_sort = TRUE
   )
 
-colnames(datos_ancho)
-# 
+# 4. Eliminar columnas no deseadas en formato ancho
+datos_ancho <- datos_ancho %>%
+  select(-matches("(?i)pre-test|prueba de diagnóstico inicial"))
+
+# Verificar columnas finales
+cat("Columnas finales:\n")
+print(colnames(datos_ancho))
 
 
 
@@ -90,14 +95,16 @@ datos_renombrados <- datos_ancho %>%
       str_detect(.x, "Cuestionario final proteínas") ~ "U3_Cuestionario final proteínas 2025",
       str_detect(.x, "ACTIVIDAD 4.1") ~ "U4_ACTIVIDAD 4.1 2025",
       str_detect(.x, "Evaluación Heatmap") ~ "U4_Evaluación Heatmap",
+      str_detect(.x, "ACTIVIDAD 5.1 2025") ~ "U5_ACTIVIDAD 5.1 2025",
+      str_detect(.x, "Cuestionario Evaluación U5") ~ "U5_Cuestionario Evaluación U5",
       .x %in% c("nombre", "id") ~ .x,  # Mantener nombre e id igual
       TRUE ~ .x  # Mantener otros nombres sin cambios
     )
   })
 
 # 2. Eliminar columna no deseada
-datos_renombrados <- datos_renombrados %>%
-  select(-matches("Prueba de Diagnóstico Inicial"))
+#datos_renombrados <- datos_renombrados %>%
+#  select(-matches("Prueba de Diagnóstico Inicial"))
 
 # 3. Definir el orden exacto deseado
 orden_columnas <- c(
@@ -121,7 +128,9 @@ orden_columnas <- c(
   "U3_Cuestionario de la actividad 3.3",
   "U3_Cuestionario final proteínas 2025",
   "U4_ACTIVIDAD 4.1 2025",
-  "U4_Evaluación Heatmap"
+  "U4_Evaluación Heatmap",
+  "U5_ACTIVIDAD 5.1 2025",
+  "U5_Cuestionario Evaluación U5"
 )
 
 # 4. Ordenar las columnas según el orden definido
@@ -201,43 +210,50 @@ preparar_para_formatos <- function(df) {
 ## 2. Función para aplicar formatos ----
 aplicar_formatos <- function(wb, sheet_name, df) {
   # Estilos
-  style_zero <- createStyle(fontColour = "#FFFFFF", bgFill = "#FFA500") # 0 naranja
-  style_lt6 <- createStyle(fontColour = "#000000", bgFill = "#FFFF00")  # <6 amarillo
+  style_red <- createStyle(fontColour = "#FFFFFF", bgFill = "#FF0000")   # Rojo para 0
+  style_orange <- createStyle(fontColour = "#000000", bgFill = "#FFA500") # Naranja para 1-5
   
-  # Aplicar formatos usando expresiones
-  numeric_cols <- names(df)[sapply(df, is.numeric) & !names(df) %in% c("id", "ID", "Promedio")]
+  # Identificar columnas numéricas (incluyendo "Promedio")
+  numeric_cols <- names(df)[sapply(df, is.numeric)]
   
-  for(col_name in numeric_cols) {
+  for (col_name in numeric_cols) {
     col_num <- which(names(df) == col_name)
-    col_letter <- int2col(col_num)
+    col_letter <- int2col(col_num)  # Convertir número de columna a letra (A, B, C, etc.)
     
-    # Para 0
+    # Para valores iguales a 0 (rojo)
     conditionalFormatting(
       wb, sheet_name,
       cols = col_num,
-      rows = 2:(nrow(df)+1),
-      style = style_zero,
+      rows = 2:(nrow(df) + 1),
+      style = style_red,
       type = "expression",
-      rule = paste0(col_letter, "2=0")
+      rule = paste0("$", col_letter, "2=0")
     )
     
-    # Para <6
+    # Para valores entre 1 y 5 (naranja)
     conditionalFormatting(
       wb, sheet_name,
       cols = col_num,
-      rows = 2:(nrow(df)+1),
-      style = style_lt6,
+      rows = 2:(nrow(df) + 1),
+      style = style_orange,
       type = "expression",
-      rule = paste0(col_letter, "2<6")
+      rule = paste0("AND($", col_letter, "2>=1, $", col_letter, "2<=5)")
     )
   }
 }
 
-## Función auxiliar para letras de columna ----
+# Función auxiliar para convertir números de columna a letras
 int2col <- function(n) {
   if (n <= 26) return(LETTERS[n])
-  paste0(LETTERS[floor((n-1)/26)], LETTERS[((n-1) %% 26) + 1])
+  paste0(LETTERS[(n - 1) %/% 26], LETTERS[(n - 1) %% 26 + 1])
 }
+
+cat("Validando datos antes de exportar...\n")
+cat("Grupo 2:\n")
+print(head(datos_grupo2))
+cat("Grupo 3:\n")
+print(head(datos_grupo3))
+
 
 ## 3. Exportar TODO en un solo archivo ----
 exportar_todo_en_un_archivo <- function() {

@@ -10,7 +10,7 @@ library(stringr)
 library(openxlsx)
 library(ggplot2)
 # Cargar el archivo Excel saltando las primeras 2 filas
-datos <- read_excel("data/2264_BIOINFV2B_Asistencias_20250422-2029.xlsx", 
+datos <- read_excel("data/2264_BIOINFV2B_Asistencias_2025056-2025.xlsx", 
                     skip = 2)  # <- Esta opción omite las primeras 2 filas
 
 # Eliminar las últimas 7 columnas
