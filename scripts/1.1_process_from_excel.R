@@ -97,6 +97,7 @@ datos_renombrados <- datos_ancho %>%
       str_detect(.x, "Evaluación Heatmap") ~ "U4_Evaluación Heatmap",
       str_detect(.x, "ACTIVIDAD 5.1 2025") ~ "U5_ACTIVIDAD 5.1 2025",
       str_detect(.x, "Cuestionario Evaluación U5") ~ "U5_Cuestionario Evaluación U5",
+      str_detect(.x, "Cuestionario final Unidad 5 2025") ~ "U5_Cuestionario final U5",
       .x %in% c("nombre", "id") ~ .x,  # Mantener nombre e id igual
       TRUE ~ .x  # Mantener otros nombres sin cambios
     )
@@ -130,7 +131,8 @@ orden_columnas <- c(
   "U4_ACTIVIDAD 4.1 2025",
   "U4_Evaluación Heatmap",
   "U5_ACTIVIDAD 5.1 2025",
-  "U5_Cuestionario Evaluación U5"
+  "U5_Cuestionario Evaluación U5",
+  "U5_Cuestionario final U5"
 )
 
 # 4. Ordenar las columnas según el orden definido
