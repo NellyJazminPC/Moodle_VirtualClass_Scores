@@ -10,7 +10,7 @@ library(stringr)
 library(openxlsx)
 library(ggplot2)
 # Cargar el archivo Excel saltando las primeras 2 filas
-datos <- read_excel("data/2264_BIOINFV2B_Asistencias_2025056-2025.xlsx", 
+datos <- read_excel("data/2264_BIOINFV2B_Asistencias_20251026-1552.xlsx", 
                     skip = 2)  # <- Esta opción omite las primeras 2 filas
 
 # Eliminar las últimas 7 columnas
@@ -178,7 +178,7 @@ agregar_hoja_con_formato(wb, grupo2, "GRUPO_2")
 agregar_hoja_con_formato(wb, grupo3, "GRUPO_3")
          
 ## Guardar el archivo Excel ----
-saveWorkbook(wb, "output/Asistencias_por_Grupo.xlsx", overwrite = TRUE)
+saveWorkbook(wb, "output/Asistencias_por_Grupo_2026-1.xlsx", overwrite = TRUE)
          
 message("Archivo Excel exportado exitosamente con dos hojas: GRUPO_2 y GRUPO_3")
 

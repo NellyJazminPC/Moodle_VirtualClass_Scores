@@ -72,90 +72,170 @@ print(colnames(datos_ancho))
 
 
 # 1. Primero identificamos y renombramos las columnas según su unidad
+library(dplyr)
+library(stringr)
+
 datos_renombrados <- datos_ancho %>%
-  rename_with(~ {
+  rename_with(~{
     case_when(
-      str_detect(.x, "Recapitulación.*Sesión 1") ~ "U1_Cuestionario de Recapitulación: Sesión 1",
-      str_detect(.x, "Ejercicio.*Archivos fasta") ~ "U1_Ejercicio - Archivos fasta",
-      str_detect(.x, "Actividad 1.1") ~ "U1_Actividad 1.1 Bases de datos",
-      str_detect(.x, "Actividad 1.2") ~ "U1_Actividad 1.2 Formato fasta",
-      str_detect(.x, "TAREA.*18 de FEBRERO.*Fasta-NCBI") ~ "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI",
-      str_detect(.x, "Recapitulación.*Sesión 2") ~ "U1_Cuestionario de Recapitulación: Sesión 2",
-      str_detect(.x, "TAREA.*25 DE FEBRERO.*Actividad 2.1") ~ "U2_TAREA PARA MARTES 25 DE FEBRERO. Actividad 2.1",
-      str_detect(.x, "Actividad de sistemática molecular") ~ "U2_Actividad de sistemática molecular",
-      str_detect(.x, "Evaluación de sistemática molecular") ~ "U2_Evaluación de sistemática molecular",
-      str_detect(.x, "Cuestionario final U2") ~ "U2_Cuestionario final U2 - NGS y formatos",
-      str_detect(.x, "actividades del 11 de marzo") ~ "U3_Cuestionario de actividades del 11 de marzo. PRESENTACIÓN + VIDEO",
-      str_detect(.x, "Actividad 3.1.*PDB") ~ "U3_Actividad 3.1 (PDB 2025)",
-      str_detect(.x, "Cuestionario de la actividad 3.1") ~ "U3_Cuestionario de la actividad 3.1",
-      str_detect(.x, "Actividad 3.2.*GFP") ~ "U3_Actividad 3.2 (GFP 2025)",
-      str_detect(.x, "Cuestionario de la actividad 3.2") ~ "U3_Cuestionario de la actividad 3.2",
-      str_detect(.x, "Actividad 3.3.*Alineamiento") ~ "U3_Actividad 3.3 (Alineamiento estructural 2025)",
-      str_detect(.x, "Cuestionario de la actividad 3.3") ~ "U3_Cuestionario de la actividad 3.3",
-      str_detect(.x, "Cuestionario final proteínas") ~ "U3_Cuestionario final proteínas 2025",
-      str_detect(.x, "ACTIVIDAD 4.1") ~ "U4_ACTIVIDAD 4.1 2025",
-      str_detect(.x, "Evaluación Heatmap") ~ "U4_Evaluación Heatmap",
-      str_detect(.x, "ACTIVIDAD 5.1 2025") ~ "U5_ACTIVIDAD 5.1 2025",
-      str_detect(.x, "Cuestionario Evaluación U5") ~ "U5_Cuestionario Evaluación U5",
-      str_detect(.x, "Cuestionario final Unidad 5 2025") ~ "U5_Cuestionario final U5",
-      .x %in% c("nombre", "id") ~ .x,  # Mantener nombre e id igual
-      TRUE ~ .x  # Mantener otros nombres sin cambios
+      # === U1 ===
+      str_detect(.x, regex("^\\s*Act\\.?\\s*1\\.2.*SEGUNDA PARTE.*Fasta-?NCBI", ignore_case = TRUE)) ~
+        "U1_Act. 1.2 (Segunda parte) Ejercicio Fasta-NCBI",
+      str_detect(.x, regex("Ejercicio.*Archivos\\s*fasta", ignore_case = TRUE)) ~
+        "U1_Ejercicio - Archivos fasta",
+      str_detect(.x, regex("^\\s*Actividad\\s*1\\.1", ignore_case = TRUE)) ~
+        "U1_Actividad 1.1 Bases de datos",
+      str_detect(.x, regex("^\\s*Actividad\\s*1\\.2", ignore_case = TRUE)) ~
+        "U1_Actividad 1.2 Formato fasta",
+      str_detect(.x, regex("Recapitulación.*Sesión\\s*1", ignore_case = TRUE)) ~
+        "U1_Cuestionario de Recapitulación: Sesión 1",
+      str_detect(.x, regex("Recapitulación.*Sesión\\s*2", ignore_case = TRUE)) ~
+        "U1_Cuestionario de Recapitulación: Sesión 2",
+      str_detect(.x, regex("Recapitulación.*Sesión\\s*3", ignore_case = TRUE)) ~
+        "U1_Cuestionario de Recapitulación: Sesión 3",
+      
+      # === U2 ===
+      str_detect(.x, regex("^\\s*Actividad\\s*2\\.1", ignore_case = TRUE)) ~
+        "U2_Actividad 2.1 Diseño de primers (cebadores)",
+      str_detect(.x, regex("^\\s*Act\\.?\\s*2\\.2.*sistemática.*online", ignore_case = TRUE)) ~
+        "U2_Act. 2.2 Análisis de sistemática molecular (online)",
+      str_detect(.x, regex("^\\s*(Act\\.?|Actividad)\\s*2\\.3.*MEGA", ignore_case = TRUE)) ~
+        "U2_Actividad 2.3 Sistemática molecular con MEGA",
+      str_detect(.x, regex("^\\s*2\\.3\\s*Sistem[aá]tica.*MEGA", ignore_case = TRUE)) ~
+        "U2_Actividad 2.3 Sistemática molecular con MEGA",
+      str_detect(.x, regex("^\\s*2\\.3\\s*Cuestionario.*MEGA", ignore_case = TRUE)) ~
+        "U2_Cuestionario 2.3 Sistemática molecular con MEGA",
+      str_detect(.x, regex("^\\s*Cuestionario\\s*2\\.1.*PCR", ignore_case = TRUE)) ~
+        "U2_Cuestionario 2.1 PCR y sus variantes",
+      str_detect(.x, regex("Cuestionario\\s*final\\s*U2", ignore_case = TRUE)) ~
+        "U2_Cuestionario final U2 - NGS y formatos",
+      str_detect(.x, regex("Actividad de sistemática molecular", ignore_case = TRUE)) ~
+        "U2_Actividad de sistemática molecular",
+      str_detect(.x, regex("Evaluación de sistemática molecular", ignore_case = TRUE)) ~
+        "U2_Evaluación de sistemática molecular",
+      
+      # === U3 ===
+      str_detect(.x, regex("^\\s*Actividad\\s*3\\.1.*PDB", ignore_case = TRUE)) ~
+        "U3_Actividad 3.1 (PDB 2025)",
+      str_detect(.x, regex("^\\s*Cuestionario\\s*de\\s*la\\s*actividad\\s*3\\.1", ignore_case = TRUE)) ~
+        "U3_Cuestionario de la actividad 3.1",
+      str_detect(.x, regex("^\\s*Actividad\\s*3\\.2.*GFP", ignore_case = TRUE)) ~
+        "U3_Actividad 3.2 (GFP 2025)",
+      str_detect(.x, regex("^\\s*Cuestionario\\s*de\\s*la\\s*actividad\\s*3\\.2", ignore_case = TRUE)) ~
+        "U3_Cuestionario de la actividad 3.2",
+      str_detect(.x, regex("Cuestionario\\s*3\\.0.*asincrónica.*presentación.*video", ignore_case = TRUE)) ~
+        "U3_Cuestionario 3.0 Act. asincrónica (Presentación + video)",
+      str_detect(.x, regex("Actividad\\s*3\\.3.*Alineamiento", ignore_case = TRUE)) ~
+        "U3_Actividad 3.3 (Alineamiento estructural 2025)",
+      str_detect(.x, regex("Cuestionario\\s*de\\s*la\\s*actividad\\s*3\\.3", ignore_case = TRUE)) ~
+        "U3_Cuestionario de la actividad 3.3",
+      str_detect(.x, regex("Cuestionario\\s*final\\s*proteínas", ignore_case = TRUE)) ~
+        "U3_Cuestionario final proteínas 2025",
+      
+      # === U4 / U5 ===
+      str_detect(.x, regex("ACTIVIDAD\\s*4\\.1", ignore_case = TRUE)) ~
+        "U4_ACTIVIDAD 4.1 2025",
+      str_detect(.x, regex("Evaluación\\s*Heatmap", ignore_case = TRUE)) ~
+        "U4_Evaluación Heatmap",
+      str_detect(.x, regex("ACTIVIDAD\\s*5\\.1", ignore_case = TRUE)) ~
+        "U5_ACTIVIDAD 5.1 2025",
+      str_detect(.x, regex("Cuestionario\\s*Evaluación\\s*U5", ignore_case = TRUE)) ~
+        "U5_Cuestionario Evaluación U5",
+      str_detect(.x, regex("Cuestionario\\s*final\\s*Unidad\\s*5", ignore_case = TRUE)) ~
+        "U5_Cuestionario final U5",
+      
+      # Mantener identificadores
+      .x %in% c("nombre", "id") ~ .x,
+      
+      # Por defecto, dejar igual
+      TRUE ~ .x
     )
   })
+
 
 # 2. Eliminar columna no deseada
 #datos_renombrados <- datos_renombrados %>%
 #  select(-matches("Prueba de Diagnóstico Inicial"))
 
 # 3. Definir el orden exacto deseado
+# 1) Orden actualizado (con próximas actividades comentadas)
 orden_columnas <- c(
   "nombre", "id",
-  "U1_Cuestionario de Recapitulación: Sesión 1",
-  "U1_Ejercicio - Archivos fasta",
+  
+  # --- U1 ---
   "U1_Actividad 1.1 Bases de datos",
   "U1_Actividad 1.2 Formato fasta",
-  "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI",
+  "U1_Act. 1.2 (Segunda parte) Ejercicio Fasta-NCBI",
+  "U1_Ejercicio - Archivos fasta",
   "U1_Cuestionario de Recapitulación: Sesión 2",
-  "U2_TAREA PARA MARTES 25 DE FEBRERO. Actividad 2.1",
-  "U2_Actividad de sistemática molecular",
-  "U2_Evaluación de sistemática molecular",
+  "U1_Cuestionario de Recapitulación: Sesión 3",
+  
+  # --- U2 ---
+  "U2_Actividad 2.1 Diseño de primers (cebadores)",
+  "U2_Cuestionario 2.1 PCR y sus variantes",
+  "U2_Act. 2.2 Análisis de sistemática molecular (online)",
+  "U2_Actividad 2.3 Sistemática molecular con MEGA",
+  "U2_Cuestionario 2.3 Sistemática molecular con MEGA",
   "U2_Cuestionario final U2 - NGS y formatos",
-  "U3_Cuestionario de actividades del 11 de marzo. PRESENTACIÓN + VIDEO",
+  
+  # --- U3 ---
+  "U3_Cuestionario 3.0 Act. asincrónica (Presentación + video)",
   "U3_Actividad 3.1 (PDB 2025)",
   "U3_Cuestionario de la actividad 3.1",
   "U3_Actividad 3.2 (GFP 2025)",
-  "U3_Cuestionario de la actividad 3.2",
-  "U3_Actividad 3.3 (Alineamiento estructural 2025)",
-  "U3_Cuestionario de la actividad 3.3",
-  "U3_Cuestionario final proteínas 2025",
-  "U4_ACTIVIDAD 4.1 2025",
-  "U4_Evaluación Heatmap",
-  "U5_ACTIVIDAD 5.1 2025",
-  "U5_Cuestionario Evaluación U5",
-  "U5_Cuestionario final U5"
+  "U3_Cuestionario de la actividad 3.2"
+  
+  # --- PRÓXIMAS SEMANAS ---
+  # "U3_Actividad 3.3 (Alineamiento estructural 2025)",
+  # "U3_Cuestionario de la actividad 3.3",
+  # "U3_Cuestionario final proteínas 2025",
+  # "U4_ACTIVIDAD 4.1 2025",
+  # "U4_Evaluación Heatmap",
+  # "U5_ACTIVIDAD 5.1 2025",
+  # "U5_Cuestionario Evaluación U5",
+  # "U5_Cuestionario final U5"
 )
+
+# 2) Reordenar columnas de forma segura
+library(dplyr)
+datos_ordenados <- datos_renombrados %>%
+  select(any_of(orden_columnas), everything())
+
+# 3) Diagnóstico (por si quieres revisar después)
+faltantes <- setdiff(orden_columnas, names(datos_renombrados))
+sobrantes <- setdiff(names(datos_renombrados), orden_columnas)
+
+cat("Faltantes (aún no disponibles o con nombres distintos):\n")
+print(faltantes)
+
+cat("\nColumnas sobrantes (no listadas en el orden definido):\n")
+print(sobrantes)
+
+
 
 # 4. Ordenar las columnas según el orden definido
 datos_final <- datos_renombrados %>%
-  select(any_of(orden_columnas))  # any_of() ignora columnas que no existan
+  select(any_of(orden_columnas))  # any_of() ignora columnas ausentes
 
-# Columnas a convertir (ajusta según tus necesidades)
+# Columnas que están en escala de 0 a 100 y deben pasarse a escala 0–10
 columnas_convertir <- c(
-  "U1_Ejercicio - Archivos fasta",
-  "U1_TAREA PARA MARTES 18 de FEBRERO. Act. 1.2 Ejercicio Fasta-NCBI"
+  "U1_Act. 1.2 (Segunda parte) Ejercicio Fasta-NCBI",
+  "U1_Ejercicio - Archivos fasta"
 )
 
-# Conversión automática
+# Conversión automática (solo si las columnas existen)
 datos_final <- datos_final %>%
   mutate(across(
-    all_of(columnas_convertir),
-    ~ ./10 %>% round(1)  # Divide entre 10 y redondea a 1 decimal
+    any_of(columnas_convertir),
+    ~ ifelse(!is.na(.), round(. / 10, 1), NA_real_)
   ))
 
 # 5. Verificar resultados
 cat("Columnas finales:\n")
 print(colnames(datos_final))
 
+# (Opcional) vista rápida de las columnas convertidas
+summary(select(datos_final, any_of(columnas_convertir)))
 
 
 
@@ -295,7 +375,7 @@ exportar_todo_en_un_archivo <- function() {
   
   # Guardar archivo
   if(!dir.exists("output")) dir.create("output")
-  output_file <- "output/calificaciones_consolidado.xlsx"
+  output_file <- "output/calificaciones_consolidado_2026-1.xlsx"
   saveWorkbook(wb, output_file, overwrite = TRUE)
   message("Archivo exportado con éxito: ", normalizePath(output_file))
   
